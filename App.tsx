@@ -1,6 +1,5 @@
 
-import React, { useState, useCallback, useEffect } from 'react';
-import { GoogleGenAI } from "@google/genai";
+import React, { useState, useCallback } from 'react';
 import { Question, GameState } from './types';
 import { ANIMALS, TOTAL_QUESTIONS } from './constants';
 
@@ -9,8 +8,6 @@ const App: React.FC = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [inputVal, setInputVal] = useState('');
-  const [aiFeedback, setAiFeedback] = useState<string>('');
-  const [loadingAi, setLoadingAi] = useState(false);
 
   // 初始化题目
   const generateQuestions = useCallback(() => {
@@ -38,7 +35,6 @@ const App: React.FC = () => {
     setQuestions(newQuestions);
     setCurrentIndex(0);
     setInputVal('');
-    setAiFeedback('');
   }, []);
 
   const startGame = () => {
@@ -56,30 +52,11 @@ const App: React.FC = () => {
       setInputVal('');
     } else {
       setGameState(GameState.RESULT);
-      fetchAiFeedback(updatedQuestions);
-    }
-  };
-
-  const fetchAiFeedback = async (finalQuestions: Question[]) => {
-    const correctCount = finalQuestions.filter(q => q.userAnswer === q.answer).length;
-    setLoadingAi(true);
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const prompt = `我是一个小学生，刚参加了10以内的数学考试。总共${TOTAL_QUESTIONS}题，我答对了${correctCount}题。请你化身为一位森林里的动物老师，给我写一段简短的鼓励话语，要活泼可爱，字数在50字左右。`;
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: prompt,
-      });
-      setAiFeedback(response.text || '小勇士，你太棒了！继续加油哦！');
-    } catch (error) {
-      console.error("AI Error:", error);
-      setAiFeedback(correctCount === TOTAL_QUESTIONS ? "哇！你全对了，你是森林里最聪明的小天才！" : "别灰心，森林里的动物们都在为你加油，再试一次吧！");
-    } finally {
-      setLoadingAi(false);
     }
   };
 
   const currentAnimal = ANIMALS[currentIndex % ANIMALS.length];
+  const correctCount = questions.filter(q => q.userAnswer === q.answer).length;
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -156,19 +133,12 @@ const App: React.FC = () => {
               <div className="text-center">
                 <div className="text-6xl mb-2">🏆</div>
                 <h2 className="text-3xl font-bold text-gray-800">冒险结束！</h2>
-                <div className="mt-4 p-4 bg-yellow-50 rounded-2xl border-2 border-yellow-200 italic text-gray-700">
-                  {loadingAi ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-600"></div>
-                      <span>动物老师正在写评语...</span>
-                    </div>
-                  ) : (
-                    `“${aiFeedback}”`
-                  )}
-                </div>
+                <p className="text-xl text-green-600 font-bold mt-2">
+                  得分：{correctCount} / {TOTAL_QUESTIONS}
+                </p>
               </div>
 
-              <div className="max-h-60 overflow-y-auto pr-2 space-y-2 border-t border-b py-4">
+              <div className="max-h-64 overflow-y-auto pr-2 space-y-2 border-t border-b py-4">
                 <h3 className="font-bold text-gray-600 flex items-center gap-2">
                   <i className="fas fa-list-check text-blue-500"></i> 成绩报告单
                 </h3>
